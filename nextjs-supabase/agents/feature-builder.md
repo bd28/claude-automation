@@ -84,7 +84,11 @@ Execute these steps fully autonomously:
   - Testing strategy
   - Estimated scope
 - **User approval checkpoint:**
-  - **Default:** Wait for user confirmation before proceeding
+  - **Default:** Use AskUserQuestion tool to request plan approval
+    - Question: "Do you approve this implementation plan?"
+    - Header: "Plan Approval"
+    - Options: ["Approve and proceed", "Reject - needs changes"]
+    - Wait for user response before proceeding
   - **If skip-plan-approval requested:** Display plan and proceed immediately without waiting
 
 ### 3. Execute Schema Changes (if needed)
