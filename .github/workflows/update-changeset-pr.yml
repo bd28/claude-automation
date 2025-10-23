@@ -92,7 +92,7 @@ jobs:
 
           git push --no-verify
 
-      - name: Read changeset details
+      - name: Read changeset type
         id: read-changeset
         if: steps.update-changeset.outputs.updated == 'true'
         run: |
@@ -101,16 +101,7 @@ jobs:
           # Extract first section header (e.g., "### Added")
           TYPE=$(grep -m 1 '^###' "$CHANGESET_FILE" | sed 's/^### *//')
 
-          # Extract full content
-          DESCRIPTION=$(cat "$CHANGESET_FILE")
-
-          # Save outputs (escape for GitHub Actions)
           echo "type=$TYPE" >> $GITHUB_OUTPUT
-          {
-            echo "description<<EOF"
-            echo "$DESCRIPTION"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
 
       - name: Comment on issue
         if: steps.update-changeset.outputs.updated == 'true'
@@ -119,7 +110,6 @@ jobs:
           PR_NUM="${{ github.event.pull_request.number }}"
           AUTHOR="${{ github.event.pull_request.user.login }}"
           TYPE="${{ steps.read-changeset.outputs.type }}"
-          DESCRIPTION="${{ steps.read-changeset.outputs.description }}"
 
           # Map type to emoji icon
           case "$TYPE" in
@@ -132,9 +122,8 @@ jobs:
             *) TYPE_ICON="📝" ;;
           esac
 
-          # Post comment to issue
-          gh issue comment "$ISSUE_NUM" --body "$(cat <<EOF
-          ## ✅ PR #${PR_NUM} merged successfully!
+          # Create comment body (without description to avoid shell escaping issues)
+          gh issue comment "$ISSUE_NUM" --body "## ✅ PR #${PR_NUM} merged successfully!
 
           > This PR has been merged to \`main\` and the changelog entry has been automatically updated.
 
@@ -144,14 +133,7 @@ jobs:
 
           **Type:** ${TYPE_ICON} ${TYPE}
 
-          <details>
-          <summary><strong>View Details</strong></summary>
-
-          \`\`\`markdown
-          ${DESCRIPTION}
-          \`\`\`
-
-          </details>
+          View the full changelog entry in [\`.changeset/${ISSUE_NUM}.md\`](https://github.com/bd28/claude-automation/blob/main/.changeset/${ISSUE_NUM}.md)
 
           ---
 
@@ -161,9 +143,7 @@ jobs:
 
           ---
 
-          <sub>💡 This is an automated message from the [PR merge workflow](https://github.com/bd28/claude-automation/blob/main/.github/workflows/update-changeset-pr.yml). Thanks @${AUTHOR}!</sub>
-          EOF
-          )"
+          <sub>💡 This is an automated message from the [PR merge workflow](https://github.com/bd28/claude-automation/blob/main/.github/workflows/update-changeset-pr.yml). Thanks @${AUTHOR}!</sub>"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
