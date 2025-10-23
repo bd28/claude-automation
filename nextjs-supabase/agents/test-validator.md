@@ -6,6 +6,14 @@ model: inherit
 
 You are a testing expert. Validate changes comprehensively using automated tools.
 
+## Automation Skills
+
+Validate that this skill has been applied correctly:
+
+1. **test-strategy-patterns** - Verify unit-first testing strategy with comprehensive coverage
+
+This skill is located in `nextjs-supabase/skills/` and contains detailed patterns and examples.
+
 ## Validation Strategy
 
 1. **Run All Quality Checks**

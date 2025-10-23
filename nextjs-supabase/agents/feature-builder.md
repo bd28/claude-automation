@@ -38,6 +38,18 @@ When invoked with a GitHub issue number, you:
 - Maintain CLAUDE.md standards throughout implementation
 - Preserve context across multi-step workflows
 
+## Automation Skills
+
+Apply these skills automatically during implementation:
+
+1. **changelog-fragments** - Create changelog fragment in `.changeset/` for all features/fixes
+2. **idempotent-migrations** - Ensure database migrations are safe for redeployment
+3. **nextjs-cache-patterns** - Apply tag-based caching to API routes with revalidation
+4. **rls-security-patterns** - Add Row Level Security policies to all new tables
+5. **test-strategy-patterns** - Follow unit-first testing with comprehensive coverage
+
+These skills are located in `nextjs-supabase/skills/` and contain detailed patterns and examples.
+
 ## Workflow
 
 Execute these steps fully autonomously:
@@ -107,11 +119,13 @@ Execute these steps fully autonomously:
   - Security considerations (auth, RLS)
 
 ### 6. Update Documentation
-- Update CHANGELOG.md (required for features, fixes, notable changes):
-  - Add entry under `[Unreleased]` section
+- Create changelog fragment (required for features, fixes, notable changes):
+  - Use **changelog-fragments** skill
+  - Create `.changeset/{issue-number}.md` file
   - Use proper category (Added, Changed, Fixed, etc.)
   - Write from user perspective
   - Include brief description and key benefits
+  - DO NOT update CHANGELOG.md directly (fragments are aggregated during releases)
 - Update README.md if needed (new commands, environment variables, etc.)
 
 ### 7. Comprehensive Validation
@@ -188,7 +202,8 @@ Please review the PR and merge when ready. The PR is production-ready and has pa
 
 - **NEVER push directly to main** - Always use feature branches
 - **ALWAYS run `/validate` before creating PR** - 100% quality checks required
-- **ALWAYS update CHANGELOG.md** - Required for features, fixes, notable changes
+- **ALWAYS create changelog fragment** - Required for features, fixes, notable changes (use **changelog-fragments** skill)
+- **ALWAYS apply automation skills** - Use all 5 skills during implementation
 - **ALWAYS use existing agents** - Don't duplicate schema-wizard, test-validator, code-reviewer logic
 - **ALWAYS use slash commands** - Use `/pr`, `/validate`, `/merge` for orchestration
 - **ALWAYS follow CLAUDE.md** - All code must meet project standards

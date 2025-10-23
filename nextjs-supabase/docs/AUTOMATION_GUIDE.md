@@ -2,12 +2,12 @@
 
 This guide shows how to use automated workflows to ship features faster. Instead of manually running tests, creating PRs, and monitoring CI feedback, use slash commands to orchestrate complete workflows that handle everything autonomously.
 
-**Layered DRY architecture:** CLAUDE.md (standards) → Hooks (awareness) → Agents (specialists) → Commands (orchestrators) → GitHub CI
+**Layered DRY architecture:** CLAUDE.md (standards) → Hooks (awareness) → Skills (patterns) → Agents (specialists) → Commands (orchestrators) → GitHub CI
 
 ```
-CLAUDE.md → Hooks → Agents → Commands → GitHub CI
-   ↓          ↓        ↓         ↓          ↓
-Standards  Auto-run  Experts  Orchestrate  @claude
+CLAUDE.md → Hooks → Skills → Agents → Commands → GitHub CI
+   ↓          ↓        ↓        ↓         ↓          ↓
+Standards  Auto-run Patterns Experts  Orchestrate  @claude
 ```
 
 ## Quick Reference
@@ -35,6 +35,20 @@ Standards  Auto-run  Experts  Orchestrate  @claude
 | `schema-wizard`   | Database schema             | Making any schema/migration changes  |
 | `test-validator`  | Comprehensive testing       | Validating functionality works       |
 
+### Automation Skills
+
+Built-in patterns that agents apply automatically during development:
+
+| Skill                     | Purpose                                               | Auto-applied By                       |
+| ------------------------- | ----------------------------------------------------- | ------------------------------------- |
+| `changelog-fragments`     | Create changelog entries in `.changeset/` directory   | feature-builder, schema-wizard        |
+| `idempotent-migrations`   | Make database migrations safe for redeployment        | schema-wizard, feature-builder        |
+| `nextjs-cache-patterns`   | Apply tag-based caching to API routes                 | feature-builder                       |
+| `rls-security-patterns`   | Add Row Level Security policies to new tables         | schema-wizard, feature-builder        |
+| `test-strategy-patterns`  | Follow unit-first testing with comprehensive coverage | feature-builder, test-validator       |
+
+**Skills Location:** `nextjs-supabase/skills/` - Each skill has a `SKILL.md` with patterns, examples, and checklists.
+
 ## Automation Highlights
 
 **From issue to production in one command:** `/build 272` analyzes GitHub issue, plans, implements, validates, creates PR (pauses for your review before merge)
@@ -44,7 +58,11 @@ Standards  Auto-run  Experts  Orchestrate  @claude
 **Automatic without asking:**
 
 - Quality checks (format, lint, type-check) via `/validate` and `/pr`
-- Changelog verification (check CHANGELOG.md updated for features/fixes) via code reviews
+- Changelog fragments (create `.changeset/{issue}.md` for features/fixes) via **changelog-fragments** skill
+- Idempotent migrations (safe for redeployment) via **idempotent-migrations** skill
+- RLS policies (automatic security on new tables) via **rls-security-patterns** skill
+- Cache patterns (tag-based API caching) via **nextjs-cache-patterns** skill
+- Test strategy (unit-first comprehensive coverage) via **test-strategy-patterns** skill
 - Schema validation (verify migrations, sync data, security checks) via `/schema`
 - UI testing (dev server, Playwright, screenshots, real data) when UI changes detected
 - PR monitoring (check CI, iterate on feedback, alert when ready) via `/pr` and `/check`
