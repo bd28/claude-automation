@@ -1,0 +1,175 @@
+name: Update Changeset PR Numbers
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  update-changeset:
+    name: Update PR Numbers in Changesets
+    # Only run if PR was merged (not just closed)
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # To commit and push changes
+      pull-requests: read   # To read PR details
+      issues: write         # To post comments on issues
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Need to fetch full history to commit and push
+          fetch-depth: 0
+          # Use GITHUB_TOKEN to authenticate
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract issue number from PR
+        id: extract-issue
+        run: |
+          # Extract issue number from branch name (format: issue-123-description)
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          ISSUE_NUM=$(echo "$BRANCH_NAME" | grep -oE '^issue-[0-9]+' | grep -oE '[0-9]+')
+
+          if [ -z "$ISSUE_NUM" ]; then
+            # Fallback: try extracting from PR body (looks for "Closes #123" or "Fixes #456")
+            ISSUE_NUM=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oE '(Closes|Fixes|Resolves) #[0-9]+' | head -1 | grep -oE '[0-9]+')
+          fi
+
+          if [ -z "$ISSUE_NUM" ]; then
+            echo "No issue number found in branch name or PR body"
+            echo "issue_number=" >> $GITHUB_OUTPUT
+          else
+            echo "Found issue number: $ISSUE_NUM"
+            echo "issue_number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update changeset with PR number
+        id: update-changeset
+        if: steps.extract-issue.outputs.issue_number != ''
+        run: |
+          ISSUE_NUM="${{ steps.extract-issue.outputs.issue_number }}"
+          PR_NUM="${{ github.event.pull_request.number }}"
+          CHANGESET_FILE=".changeset/${ISSUE_NUM}.md"
+
+          echo "Looking for changeset: $CHANGESET_FILE"
+
+          if [ ! -f "$CHANGESET_FILE" ]; then
+            echo "Changeset file not found: $CHANGESET_FILE"
+            echo "updated=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check if PR number is already set (not [PR#0])
+          if ! grep -q '\[PR#0\]' "$CHANGESET_FILE"; then
+            echo "PR number already set, skipping update"
+            echo "updated=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Update [PR#0] to [PR#{actual_number}]
+          sed -i.bak "s/\[PR#0\]/[PR#$PR_NUM]/g" "$CHANGESET_FILE"
+          rm "${CHANGESET_FILE}.bak"
+
+          echo "Updated $CHANGESET_FILE with PR #$PR_NUM"
+          echo "updated=true" >> $GITHUB_OUTPUT
+          echo "changeset_file=$CHANGESET_FILE" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes
+        if: steps.update-changeset.outputs.updated == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add "${{ steps.update-changeset.outputs.changeset_file }}"
+          git commit --no-verify -m "chore: Update changeset with PR #${{ github.event.pull_request.number }}" \
+                     -m "Automated update by GitHub Actions after PR merge." \
+                     -m "[skip ci]"
+
+          git push --no-verify
+
+      - name: Read changeset details
+        id: read-changeset
+        if: steps.update-changeset.outputs.updated == 'true'
+        run: |
+          CHANGESET_FILE="${{ steps.update-changeset.outputs.changeset_file }}"
+
+          # Extract first section header (e.g., "### Added")
+          TYPE=$(grep -m 1 '^###' "$CHANGESET_FILE" | sed 's/^### *//')
+
+          # Extract full content
+          DESCRIPTION=$(cat "$CHANGESET_FILE")
+
+          # Save outputs (escape for GitHub Actions)
+          echo "type=$TYPE" >> $GITHUB_OUTPUT
+          {
+            echo "description<<EOF"
+            echo "$DESCRIPTION"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Comment on issue
+        if: steps.update-changeset.outputs.updated == 'true'
+        run: |
+          ISSUE_NUM="${{ steps.extract-issue.outputs.issue_number }}"
+          PR_NUM="${{ github.event.pull_request.number }}"
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          TYPE="${{ steps.read-changeset.outputs.type }}"
+          DESCRIPTION="${{ steps.read-changeset.outputs.description }}"
+
+          # Map type to emoji icon
+          case "$TYPE" in
+            Added) TYPE_ICON="✨" ;;
+            Fixed) TYPE_ICON="🐛" ;;
+            Changed) TYPE_ICON="🔄" ;;
+            Deprecated) TYPE_ICON="⚠️" ;;
+            Removed) TYPE_ICON="🗑️" ;;
+            Security) TYPE_ICON="🔒" ;;
+            *) TYPE_ICON="📝" ;;
+          esac
+
+          # Post comment to issue
+          gh issue comment "$ISSUE_NUM" --body "$(cat <<EOF
+          ## ✅ PR #${PR_NUM} merged successfully!
+
+          > This PR has been merged to \`main\` and the changelog entry has been automatically updated.
+
+          ---
+
+          ### 📋 Changeset Summary
+
+          **Type:** ${TYPE_ICON} ${TYPE}
+
+          <details>
+          <summary><strong>View Details</strong></summary>
+
+          \`\`\`markdown
+          ${DESCRIPTION}
+          \`\`\`
+
+          </details>
+
+          ---
+
+          ### 📦 Next Steps
+
+          The changes will be included in the next plugin release.
+
+          ---
+
+          <sub>💡 This is an automated message from the [PR merge workflow](https://github.com/bd28/claude-automation/blob/main/.github/workflows/update-changeset-pr.yml). Thanks @${AUTHOR}!</sub>
+          EOF
+          )"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Changeset update workflow failed!"
+          echo "Check the logs above for details."
+          exit 1
