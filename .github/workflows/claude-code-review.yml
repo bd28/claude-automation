@@ -3,9 +3,21 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
+    # Optional: Only run on specific file changes
+    # paths:
+    #   - "src/**/*.ts"
+    #   - "src/**/*.tsx"
+    #   - "src/**/*.js"
+    #   - "src/**/*.jsx"
 
 jobs:
   claude-review:
+    # Optional: Filter by PR author
+    # if: |
+    #   github.event.pull_request.user.login == 'external-contributor' ||
+    #   github.event.pull_request.user.login == 'new-developer' ||
+    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -17,7 +29,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Run Claude Code Review
         id: claude-review
@@ -25,55 +37,55 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-          # Allow Claude Code CLI bot to trigger reviews
-          allowed_bots: claude
+                   # Allow Claude Code CLI bot to trigger reviews
+                   allowed_bots: claude
 
-          # Enable progress tracking comments
-          track_progress: true
-
-          # Automated review prompt (no @claude mention needed)
-          # References CLAUDE.md for standards (DRY principle)
-          prompt: |
-            Review this PR using the "Code Review Standards" defined in CLAUDE.md.
-
-            This is a Claude Code plugin repository. Focus your review on:
-
-            **PLUGIN STRUCTURE VERIFICATION:**
-            - Agent files (`agents/*.md`): Proper YAML frontmatter, clear prompts, correct model specification
-            - Command files (`commands/*.md`): Proper YAML frontmatter, argument handling, allowed-tools specification
-            - Skill files (`skills/*/SKILL.md`): Proper YAML frontmatter, clear patterns, actionable checklists
-            - Templates (`templates/`): Correct placeholder syntax, complete instructions, working examples
-            - Plugin metadata (`.claude-plugin/plugin.json`): Valid JSON, semantic versioning
-
-            **CHANGELOG FRAGMENT VERIFICATION (Critical):**
-            Check if a changelog fragment file exists in `.changeset/` directory.
-            - For features, bug fixes, or notable changes: `.changeset/{issue-number}.md` fragment is REQUIRED
-            - For minor changes (docs, comments, formatting): fragment is optional
-            - Fragment should follow Keep a Changelog format (Added/Changed/Fixed/etc.)
-            - If missing and required: mark as "Critical Issue" per CLAUDE.md standards
-
-            **DOCUMENTATION CONSISTENCY:**
-            - README.md reflects new features/changes
-            - Plugin docs (`docs/*.md`) are updated
-            - Template CLAUDE.md includes new commands/agents
-            - Examples are accurate and tested
-
-            **COMPATIBILITY:**
-            - Commands reference existing agents correctly
-            - Agents use appropriate tool access
-            - Skills are properly integrated with agents
-            - Templates are compatible with current plugin structure
-
-            Provide feedback in this format:
-            - **Merge Decision** (YES/NO)
-            - **Critical Issues** (must fix before merge)
-            - **Important Improvements** (should fix)
-            - **Optional Suggestions** (nice to have)
-
-            Refer to CLAUDE.md for what constitutes each category.
-
-          # Minimal toolset: plugin review only needs to read files
-          claude_args: |
-            --allowedTools Read
-            --allowedTools Grep
-            --allowedTools Glob
+                   # Enable progress tracking comments
+                   track_progress: true
+         
+                   # Automated review prompt (no @claude mention needed)
+                   # References CLAUDE.md for standards (DRY principle)
+                   prompt: |
+                     Review this PR using the "Code Review Standards" defined in CLAUDE.md.
+         
+                     This is a Claude Code plugin repository. Focus your review on:
+         
+                     **PLUGIN STRUCTURE VERIFICATION:**
+                     - Agent files (`agents/*.md`): Proper YAML frontmatter, clear prompts, correct model specification
+                     - Command files (`commands/*.md`): Proper YAML frontmatter, argument handling, allowed-tools specification
+                     - Skill files (`skills/*/SKILL.md`): Proper YAML frontmatter, clear patterns, actionable checklists
+                     - Templates (`templates/`): Correct placeholder syntax, complete instructions, working examples
+                     - Plugin metadata (`.claude-plugin/plugin.json`): Valid JSON, semantic versioning
+         
+                     **CHANGELOG FRAGMENT VERIFICATION (Critical):**
+                     Check if a changelog fragment file exists in `.changeset/` directory.
+                     - For features, bug fixes, or notable changes: `.changeset/{issue-number}.md` fragment is REQUIRED
+                     - For minor changes (docs, comments, formatting): fragment is optional
+                     - Fragment should follow Keep a Changelog format (Added/Changed/Fixed/etc.)
+                     - If missing and required: mark as "Critical Issue" per CLAUDE.md standards
+         
+                     **DOCUMENTATION CONSISTENCY:**
+                     - README.md reflects new features/changes
+                     - Plugin docs (`docs/*.md`) are updated
+                     - Template CLAUDE.md includes new commands/agents
+                     - Examples are accurate and tested
+         
+                     **COMPATIBILITY:**
+                     - Commands reference existing agents correctly
+                     - Agents use appropriate tool access
+                     - Skills are properly integrated with agents
+                     - Templates are compatible with current plugin structure
+         
+                     Provide feedback in this format:
+                     - **Merge Decision** (YES/NO)
+                     - **Critical Issues** (must fix before merge)
+                     - **Important Improvements** (should fix)
+                     - **Optional Suggestions** (nice to have)
+         
+                     Refer to CLAUDE.md for what constitutes each category.
+         
+                   # Minimal toolset: plugin review only needs to read files
+                   claude_args: |
+                     --allowedTools Read
+                     --allowedTools Grep
+                     --allowedTools Glob
