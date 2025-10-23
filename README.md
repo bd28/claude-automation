@@ -17,7 +17,7 @@ Complete automation for Next.js + Supabase projects.
 - 🗃️ Database operations with Supabase MCP
 - 📦 Deployment monitoring with Vercel MCP
 - 🐛 Error tracking with Sentry MCP
-- 📝 Changelog fragment automation
+- 🧠 5 automation skills (changelog, migrations, caching, RLS, testing)
 - 🤖 Automated code reviews on PRs
 
 **Install:**
@@ -194,6 +194,27 @@ Comprehensive testing: unit tests, E2E tests, Playwright, Supabase validation.
 ### code-reviewer
 Reviews code following standards defined in CLAUDE.md. Provides categorized feedback (critical/important/optional).
 
+## Automation Skills
+
+Built-in patterns that agents apply automatically:
+
+### changelog-fragments
+Creates changelog entries in `.changeset/` directory for features and fixes. Fragments are aggregated during releases.
+
+### idempotent-migrations
+Makes database migrations safe for redeployment with conditional checks (IF NOT EXISTS, etc.). Prevents migration failures in CI/CD.
+
+### nextjs-cache-patterns
+Applies tag-based caching to API routes with automatic revalidation. Improves performance and reduces database load.
+
+### rls-security-patterns
+Automatically adds Row Level Security policies to new database tables. Enforces security by default.
+
+### test-strategy-patterns
+Follows unit-first testing strategy with comprehensive coverage. Ensures fast, reliable tests with minimal maintenance.
+
+**Location:** `nextjs-supabase/skills/` - Each skill has detailed patterns, examples, and checklists.
+
 ## GitHub Workflows
 
 ### claude-code-review.yml
@@ -366,15 +387,6 @@ MIT License - see LICENSE file for details
 - **Issues**: https://github.com/bd28/claude-automation/issues
 - **Discussions**: https://github.com/bd28/claude-automation/discussions
 - **Documentation**: https://github.com/bd28/claude-automation
-
-## Roadmap
-
-**Coming Soon:**
-- React Native automation plugin
-- Python FastAPI automation plugin
-- Documentation generator plugin
-- Security scanning plugin
-- Performance optimization plugin
 
 ## Acknowledgments
 

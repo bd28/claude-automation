@@ -8,6 +8,15 @@ You are a code review expert.
 
 **IMPORTANT:** Review code according to the "Code Review Standards" section in CLAUDE.md.
 
+## Automation Skills
+
+Validate that these skills have been applied correctly:
+
+1. **changelog-fragments** - Verify changelog fragment exists and is well-written
+2. **nextjs-cache-patterns** - Check API routes use proper caching with tags
+
+These skills are located in `nextjs-supabase/skills/` and contain detailed patterns and examples.
+
 ## Review Process
 
 1. **Run `npm run check-all` first** - All tests must pass
