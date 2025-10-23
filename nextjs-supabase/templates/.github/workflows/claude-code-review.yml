@@ -1,0 +1,116 @@
+# Updated on 2025-10-21 - Migrated to v1.0
+
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+    # Optional: Only run on specific file changes
+    # paths:
+    #   - "src/**/*.ts"
+    #   - "src/**/*.tsx"
+    #   - "src/**/*.js"
+    #   - "src/**/*.jsx"
+
+jobs:
+  claude-review:
+    # Optional: Filter by PR author
+    # if: |
+    #   github.event.pull_request.user.login == 'external-contributor' ||
+    #   github.event.pull_request.user.login == 'new-developer' ||
+    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          # Allow Claude Code CLI bot to trigger reviews
+          allowed_bots: claude
+
+          # Enable progress tracking comments (restores v0.x agent mode behavior)
+          track_progress: true
+
+          # Automated review prompt (no @claude mention needed)
+          # References CLAUDE.md for standards (DRY principle)
+          prompt: |
+            Review this PR using the "Code Review Standards" defined in CLAUDE.md.
+
+            IMPORTANT: Run `npm run check-all` first to verify all quality checks pass.
+
+            **CHANGELOG FRAGMENT VERIFICATION (Critical):**
+            Check if a changelog fragment file exists in `.changeset/` directory.
+            - For features, bug fixes, or notable changes: `.changeset/{issue-number}.md` fragment is REQUIRED
+            - For minor changes (docs, comments, formatting): fragment is optional
+            - Fragment should use YAML frontmatter with type, issue number, and description
+            - If missing and required: mark as "Critical Issue" per CLAUDE.md standards
+
+            **MIGRATION IDEMPOTENCY VERIFICATION (Critical):**
+            If PR includes new migration files in `drizzle/*.sql`, verify idempotency:
+            - CREATE TABLE must use `CREATE TABLE IF NOT EXISTS`
+            - CREATE INDEX must use `CREATE INDEX IF NOT EXISTS`
+            - Foreign key constraints must be wrapped in `DO $$ BEGIN...IF NOT EXISTS...END $$` blocks
+            - CREATE POLICY must have `DROP POLICY IF EXISTS` before it
+            - ALTER TABLE ADD COLUMN should be wrapped in DO $$ blocks with column existence checks
+            - If non-idempotent migrations found: mark as "Critical Issue"
+            - Why: Non-idempotent migrations cause deployment failures on redeployments
+
+            Use the exact format specified in `.claude/agents/code-reviewer.md`:
+            - Merge Decision (YES/NO)
+            - Critical Issues (must fix)
+            - Important Improvements (should fix)
+            - Optional Suggestions (nice to have)
+
+            Refer to CLAUDE.md for what constitutes each category.
+
+          # Claude Code CLI arguments (v1.0 format)
+          # Minimal toolset: code review only needs to read files and run quality checks
+          # Note: E2E tests run in separate CI workflow, not during code review
+          claude_args: |
+            --allowedTools Bash(npm install)
+            --allowedTools Bash(npm run check-all)
+
+          # Optional: Specify model (defaults to Claude Sonnet 4)
+          # claude_args: |
+          #   --model claude-opus-4-20250514
+
+          # Optional: Limit conversation turns
+          # claude_args: |
+          #   --max-turns 15
+
+          # Optional: Add system prompt for custom instructions
+          # claude_args: |
+          #   --system-prompt "Follow our specific coding standards and practices"
+
+          # Optional: Customize review based on file types
+          # prompt: |
+          #   Review this PR focusing on:
+          #   - For TypeScript files: Type safety and proper interface usage
+          #   - For API endpoints: Security, input validation, and error handling
+          #   - For React components: Performance, accessibility, and best practices
+          #   - For tests: Coverage, edge cases, and test quality
+
+          # Optional: Different prompts for different authors
+          # prompt: |
+          #   ${{ github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' &&
+          #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
+          #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
+
+          # Optional: Skip review for certain conditions (use job-level if)
+          # if: |
+          #   !contains(github.event.pull_request.title, '[skip-review]') &&
+          #   !contains(github.event.pull_request.title, '[WIP]')

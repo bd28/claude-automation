@@ -1,0 +1,9 @@
+{
+  "name": "nextjs-supabase",
+  "description": "Complete automation for Next.js + Supabase projects",
+  "version": "1.0.0",
+  "author": {
+    "name": "Brian DeSpain",
+    "url": "https://github.com/bd28"
+  }
+}

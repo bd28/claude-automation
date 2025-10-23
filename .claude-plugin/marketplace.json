@@ -1,0 +1,22 @@
+{
+  "name": "claude-automation",
+  "owner": {
+    "name": "Brian DeSpain",
+    "url": "https://github.com/bd28"
+  },
+  "metadata": {
+    "description": "Production-ready automation plugins for Claude Code",
+    "version": "1.0.0",
+    "pluginRoot": "."
+  },
+  "plugins": [
+    {
+      "name": "nextjs-supabase",
+      "source": "./nextjs-supabase",
+      "description": "Complete automation for Next.js + Supabase projects with MCP stack",
+      "version": "1.0.0",
+      "category": "workflow",
+      "keywords": ["nextjs", "supabase", "automation", "mcp", "github", "vercel"]
+    }
+  ]
+}

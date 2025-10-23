@@ -1,0 +1,256 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with the **[PROJECT_NAME]** application.
+
+## Core Development Principles
+
+**MANDATORY: Follow these principles for ALL code changes:**
+
+1. **DRY (Don't Repeat Yourself)** - Extract shared functionality into reusable components, utilities, or functions
+2. **KISS (Keep It Simple, Stupid)** - Choose the simplest solution that solves the problem effectively
+3. **Single Responsibility** - Each function, component, or module should have one clear purpose
+4. **Existing Patterns First** - Always follow established conventions before creating new approaches
+
+## Code Review Standards
+
+**These standards apply to ALL code reviews (local agents, GitHub CI, manual reviews):**
+
+### Critical Issues (Must Fix Before Merge)
+- **Bugs**: Logic errors, runtime errors, type errors
+- **Security**: SQL injection, XSS, exposed secrets, missing auth checks
+- **Breaking Changes**: API changes without migration path, schema changes without migrations
+- **Data Loss**: Missing migrations, destructive operations without backups
+- **Performance**: N+1 queries, missing indexes on frequently queried columns
+- **Test Failures**: Any failing tests in `npm run check-all`
+- **Missing Changelog Fragment**: Feature additions, bug fixes, or notable changes without `.changeset/*.md` fragment file
+
+### Important Improvements (Should Fix)
+- **Significant Duplication**: Same logic repeated 3+ times
+- **Missing Error Handling**: Unhandled promise rejections, missing try-catch
+- **Accessibility**: Missing ARIA labels, keyboard navigation issues
+- **Type Safety**: Using `any` instead of proper types
+
+### Optional Suggestions (Nice to Have)
+- Minor refactoring for readability
+- Additional test coverage for edge cases
+- Performance micro-optimizations
+
+### Skip (Do Not Comment On)
+- Style preferences (Prettier handles this)
+- Trivial refactoring (one-line changes)
+- Bikeshedding (naming preferences without clear improvement)
+- Over-engineering suggestions (adding abstraction without clear need)
+
+## Changelog Maintenance
+
+**This project uses changelog fragments** (installed via nextjs-supabase automation plugin).
+
+**Creating a Fragment:**
+```bash
+npm run changelog:add
+```
+
+Or manually copy `.changeset/_template.md` to `.changeset/{issue-number}.md`.
+
+**When to create fragments**: Feature additions, bug fixes, security patches, removed features, breaking changes.
+
+**Skip fragments for**: Documentation typos, code comments only, formatting-only changes, internal refactoring with no user impact.
+
+See the automation plugin documentation for full changelog workflow details.
+
+## MCP Tools Integration
+
+**CRITICAL: Use these MCP tools as your primary approach:**
+
+This project has four MCP servers configured (installed via plugin):
+
+### Playwright MCP
+- Browser testing and UI debugging
+- No credentials required
+- Used by: /validate, UI testing workflows
+
+### Supabase MCP
+- Database queries and schema management
+- **Setup**: Run `/setup-mcp` once, then `/mcp` to authorize
+- Used by: /schema, schema-wizard agent, database operations
+
+### Vercel MCP
+- Deployment monitoring and management
+- **Setup**: Run `/setup-mcp` once, then `/mcp` to authorize
+- Used by: /ship, deployment workflows
+
+### Sentry MCP
+- Error tracking and debugging
+- **Setup**: Run `/setup-mcp` once, then `/mcp` to authorize
+- Used by: Error analysis, production debugging
+
+**For database schema changes:**
+- Update `lib/db/schema.ts` with your changes
+- Generate migration: `npm run db:generate`
+- Review generated SQL in `drizzle/` directory
+- Test locally: `npm run db:migrate:local`
+- Commit both schema.ts and migration files
+- Migrations run automatically on production deployment
+
+See [MCP_SETUP.md](docs/MCP_SETUP.md) for detailed setup instructions.
+
+## Architecture Overview
+
+**[Describe your application architecture here]**
+
+Example:
+> A Next.js 14 application for [purpose]. Built with App Router, TypeScript, and Tailwind CSS.
+
+### Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Database**: PostgreSQL via Supabase
+- **ORM**: Drizzle ORM
+- **Styling**: Tailwind CSS
+- **Authentication**: Supabase Auth
+- **Deployment**: Vercel
+
+### Data Flow
+
+**[Describe your data flow here]**
+
+Example:
+1. **External API → Database**: `sync-script.js` syncs data to PostgreSQL
+2. **Database → App**: Server-side operations via Drizzle ORM (`/lib/db/`)
+3. **API → Client**: REST endpoints in `/app/api` for client-side data fetching
+4. **Client State**: SWR or React Query for caching and revalidation
+
+### Key Files
+
+**[List your key files and their purposes]**
+
+Example:
+- `/lib/db/index.ts` - Database operations using Drizzle ORM
+- `/lib/db/schema.ts` - TypeScript type definitions for database
+- `/components/` - Reusable React components
+- `/app/api/` - API route handlers
+
+### Database Schema
+
+**[Describe your database tables]**
+
+Example:
+- `users` - User profiles and authentication
+- `posts` - Blog posts with authors
+- `comments` - Post comments with relationships
+
+## Essential Commands
+
+```bash
+# Development
+npm run dev          # Start development server
+npm run build        # Build for production
+
+# Quality Assurance
+npm run check-all    # Run fast checks: lint + type-check + format + unit tests
+npm run lint         # Run ESLint only
+npm run type-check   # TypeScript type checking only
+npm run format       # Format code with Prettier
+
+# Database (if using local Supabase)
+npm run db:start     # Start local Supabase stack
+npm run db:stop      # Stop local Supabase
+npm run db:migrate:local  # Apply migrations to local database
+npm run db:sync      # Sync production data to local database
+
+# Testing
+npm test             # Run all tests
+npm run test:unit    # Run unit tests only
+npm run test:e2e     # Run end-to-end tests only
+
+# GitHub Issue Collaboration
+npm run upload-screenshots -- --issue=<number> --files="<pattern>"
+```
+
+**IMPORTANT: Always run `npm run check-all` before committing changes!**
+
+## API Routes
+
+**[List your API routes and their purposes]**
+
+Example:
+- `/api/posts` - CRUD operations for posts
+- `/api/users/[id]` - User profile management
+- `/api/auth/*` - Authentication endpoints
+
+## Environment Configuration
+
+### Required Variables
+
+```env
+# Database
+SUPABASE_DB_URL=postgresql://...
+NEXT_PUBLIC_SUPABASE_URL=https://...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+
+# [Add your project-specific environment variables here]
+```
+
+## Git Workflow
+
+**CRITICAL: Never commit directly to main!**
+
+Always use feature branches and pull requests:
+
+1. Create branch: `git checkout -b issue-###-description`
+2. Make changes and run: `npm run check-all`
+3. Commit: `git commit -m "feat: description"`
+4. Push: `git push -u origin issue-###-description`
+5. Create PR: `gh pr create`
+6. Merge after approval: `gh pr merge [PR_NUMBER] --merge`
+
+**Branch naming**: Always use `issue-###-description` format.
+
+## Automation Workflows
+
+**This project uses the nextjs-supabase automation plugin.**
+
+### Available Commands
+
+- `/build <issue-number>` - Autonomous feature implementation from GitHub issue
+- `/pr` - Complete PR workflow (validate, create, monitor, iterate)
+- `/validate` - Comprehensive validation (tests, E2E, code review)
+- `/check` - Monitor PR feedback and iterate on fixes
+- `/merge <pr-number>` - Merge approved PR
+- `/ship` - Complete workflow from changes to production
+- `/schema` - Database schema change workflow
+
+### Proactive Automation
+
+**After schema changes**:
+- Verify with Supabase MCP
+- Check for security issues: `mcp__supabase__get_advisors`
+- Sync production data: `npm run db:sync`
+
+**After UI changes**:
+- Test with Playwright MCP
+- Take screenshots for verification
+- Verify with real data
+
+**Before commits**:
+- Run `npm run check-all`
+- Verify migrations exist for schema changes
+
+See plugin documentation for complete automation guide.
+
+## Production Deployment
+
+- **URL**: [YOUR_PRODUCTION_URL]
+- **Platform**: Vercel
+- **Database**: Supabase (PostgreSQL)
+- **Migrations**: Automatic via `vercel-build` script
+
+## Project-Specific Notes
+
+**[Add any project-specific notes, quirks, or important context here]**
+
+Example:
+- Time zone: All dates use US Central Time
+- Authentication: Sign-in only (no public registration)
+- Special considerations: [Any unique aspects of your project]
